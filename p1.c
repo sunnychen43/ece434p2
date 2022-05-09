@@ -2,17 +2,6 @@
 
 int main(int argc, char *argv[])
 {
-    struct sigaction sa;
-    sa.sa_handler = SIG_IGN;
-
-    sigaction(SIGILL, &sa, NULL);
-    sigaction(SIGFPE, &sa, NULL);
-    sigaction(SIGHUP, &sa, NULL);
-    sigaction(SIGABRT, &sa, NULL);
-    sigaction(SIGCHLD, &sa, NULL);
-    sigaction(SIGFPE, &sa, NULL);
-    sigaction(SIGHUP, &sa, NULL);
-    sigaction(SIGSTOP, &sa, NULL);
 
     pthread_t *tid[NUM_TEAMS];
     pthread_attr_t attr;
@@ -57,6 +46,23 @@ int main(int argc, char *argv[])
         }
     }
 
+    sigset_t x;
+    sigemptyset(&x);
+
+    sigaddset(&x, SIGILL);
+    sigaddset(&x, SIGFPE);
+    sigaddset(&x, SIGHUP);
+    sigaddset(&x, SIGABRT);
+    sigaddset(&x, SIGCHLD);
+    sigaddset(&x, SIGINT);
+    sigaddset(&x, SIGSTOP);
+    pthread_sigmask(SIG_BLOCK, &x, NULL);
+
+    // struct sigaction sa;
+    // sa.sa_handler = &sig_handler;
+    // sigaction(SIGINT, &sa, NULL);
+    // sigaction(SIGSTOP, &sa, NULL);
+
     // join all the threads
     for (int i = 0; i < NUM_TEAMS; i++)
     {
@@ -66,104 +72,136 @@ int main(int argc, char *argv[])
         }
     }
 
+    pause();
+
     return EXIT_SUCCESS;
 }
 
 void *team1work(void *param)
 {
-    struct sigaction sa;
-    sa.sa_handler = SIG_IGN;
 
+    sigset_t x;
+    sigemptyset(&x);
     /*team 1 handles SIGINT SIGSEGV and SIGSTOP */
-    sigaction(SIGILL, &sa, NULL);
-    sigaction(SIGFPE, &sa, NULL);
-    sigaction(SIGHUP, &sa, NULL);
-    sigaction(SIGABRT, &sa, NULL);
-    sigaction(SIGCHLD, &sa, NULL);
+    sigaddset(&x, SIGILL);
+    sigaddset(&x, SIGFPE);
+    sigaddset(&x, SIGHUP);
+    sigaddset(&x, SIGABRT);
+    sigaddset(&x, SIGCHLD);
 
-    sa.sa_handler = &sig_handler;
+    pthread_sigmask(SIG_BLOCK, &x, NULL);
+
+    struct sigaction sa;
+    sa.sa_handler = &sig_handler_t1;
 
     sigaction(SIGINT, &sa, NULL);
     sigaction(SIGSEGV, &sa, NULL);
     sigaction(SIGSTOP, &sa, NULL);
 
     pause();
-    sleep(SLEEP_TIME);
 
     return NULL;
 }
 void *team2work(void *param)
 {
-    struct sigaction sa;
-    sa.sa_handler = SIG_IGN;
+    sigset_t x;
+    sigemptyset(&x);
 
     /*team 2 handles SIGINT SIGABRT and SIGCHLD */
-    sigaction(SIGILL, &sa, NULL);
-    sigaction(SIGFPE, &sa, NULL);
-    sigaction(SIGHUP, &sa, NULL);
-    sigaction(SIGSTOP, &sa, NULL);
-    sigaction(SIGSEGV, &sa, NULL);
+    sigaddset(&x, SIGILL);
+    sigaddset(&x, SIGFPE);
+    sigaddset(&x, SIGHUP);
+    sigaddset(&x, SIGSTOP);
+    sigaddset(&x, SIGSEGV);
 
-    sa.sa_handler = &sig_handler;
+    pthread_sigmask(SIG_BLOCK, &x, NULL);
+
+    struct sigaction sa;
+    sa.sa_handler = &sig_handler_t2;
 
     sigaction(SIGINT, &sa, NULL);
     sigaction(SIGABRT, &sa, NULL);
     sigaction(SIGCHLD, &sa, NULL);
 
     pause();
-    sleep(SLEEP_TIME);
 
     return NULL;
 }
 void *team3work(void *param)
 {
+
+    sigset_t x;
+    sigemptyset(&x);
+
+    /*team 3 handles SIGSTOP SIGHUP and SIGFPE */
+    sigaddset(&x, SIGINT);
+    sigaddset(&x, SIGABRT);
+    sigaddset(&x, SIGILL);
+    sigaddset(&x, SIGCHLD);
+    sigaddset(&x, SIGSEGV);
+
+    pthread_sigmask(SIG_BLOCK, &x, NULL);
+
     struct sigaction sa;
-    sa.sa_handler = SIG_IGN;
-
-    /*team 3 handles SIGSTOp SIGHUP and SIGFPE */
-    sigaction(SIGINT, &sa, NULL);
-    sigaction(SIGABRT, &sa, NULL);
-    sigaction(SIGILL, &sa, NULL);
-    sigaction(SIGCHLD, &sa, NULL);
-    sigaction(SIGSEGV, &sa, NULL);
-
-    sa.sa_handler = &sig_handler;
+    sa.sa_handler = &sig_handler_t3;
 
     sigaction(SIGFPE, &sa, NULL);
     sigaction(SIGHUP, &sa, NULL);
     sigaction(SIGSTOP, &sa, NULL);
     pause();
-    sleep(SLEEP_TIME);
 
     return NULL;
 }
 void *team4work(void *param)
 {
-    struct sigaction sa;
-    sa.sa_handler = SIG_IGN;
+    sigset_t x;
+    sigemptyset(&x);
 
     /*team 4 handles SIGILL SIGCHLD and SIGSEGV*/
-    sigaction(SIGINT, &sa, NULL);
-    sigaction(SIGABRT, &sa, NULL);
-    sigaction(SIGFPE, &sa, NULL);
-    sigaction(SIGHUP, &sa, NULL);
-    sigaction(SIGSTOP, &sa, NULL);
+    sigaddset(&x, SIGINT);
+    sigaddset(&x, SIGABRT);
+    sigaddset(&x, SIGFPE);
+    sigaddset(&x, SIGHUP);
+    sigaddset(&x, SIGSTOP);
 
-    sa.sa_handler = &sig_handler;
+    pthread_sigmask(SIG_BLOCK, &x, NULL);
+
+    struct sigaction sa;
+    sa.sa_handler = &sig_handler_t4;
 
     sigaction(SIGILL, &sa, NULL);
     sigaction(SIGCHLD, &sa, NULL);
     sigaction(SIGSEGV, &sa, NULL);
 
     pause();
-    sleep(SLEEP_TIME);
 
     return NULL;
 }
 
 /*pthread exit so each thread only catches the signal and reports its number once*/
+
+void sig_handler_t1(int sig)
+{
+    printf("Team 1 Thread Catching ");
+    sig_handler(sig);
+}
+void sig_handler_t2(int sig)
+{
+    printf("Team 2 Thread Catching ");
+    sig_handler(sig);
+}
+void sig_handler_t3(int sig)
+{
+    printf("Team 3 Thread Catching ");
+    sig_handler(sig);
+}
+void sig_handler_t4(int sig)
+{
+    printf("Team 4 Thread Catching ");
+    sig_handler(sig);
+}
 void sig_handler(int sig)
 {
     printf("Signal Number %d Caught by Thread Number: %ld\n", sig, pthread_self());
-    pthread_exit(0);
+    // pthread_exit(0);
 }

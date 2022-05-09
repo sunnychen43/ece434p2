@@ -7,8 +7,8 @@ kill:
 run: 
 	./p1.out
 
-SIGINT:
-	killall -s SIGINT p1.out
+signal:
+	killall -s $(s) p1.out
 
 all: p1.out
 p1: p1.out 
