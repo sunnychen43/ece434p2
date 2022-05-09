@@ -14,6 +14,7 @@ void *team2work(void *arg);
 void *team3work(void *arg);
 void *team4work(void *arg);
 void sig_handler(int sig);
+void sig_handler_main(int sig);
 void sig_handler_t1(int sig);
 void sig_handler_t2(int sig);
 void sig_handler_t3(int sig);

@@ -52,16 +52,15 @@ int main(int argc, char *argv[])
     sigaddset(&x, SIGILL);
     sigaddset(&x, SIGFPE);
     sigaddset(&x, SIGHUP);
-    sigaddset(&x, SIGABRT);
     sigaddset(&x, SIGCHLD);
-    sigaddset(&x, SIGINT);
-    sigaddset(&x, SIGSTOP);
     pthread_sigmask(SIG_BLOCK, &x, NULL);
 
-    // struct sigaction sa;
-    // sa.sa_handler = &sig_handler;
-    // sigaction(SIGINT, &sa, NULL);
-    // sigaction(SIGSTOP, &sa, NULL);
+    struct sigaction sa;
+    sa.sa_handler = &sig_handler_main;
+    /*main thread handles SIGINT SIGABRT and SIGTSTP */
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGABRT, &sa, NULL);
+    sigaction(SIGTSTP, &sa, NULL);
 
     // join all the threads
     for (int i = 0; i < NUM_TEAMS; i++)
@@ -72,8 +71,13 @@ int main(int argc, char *argv[])
         }
     }
 
+    pthread_sigmask(SIG_UNBLOCK, &x, NULL);
+    sa.sa_handler = SIG_DFL;
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGABRT, &sa, NULL);
+    sigaction(SIGTSTP, &sa, NULL);
+    puts("Control Restored to Main Thread");
     pause();
-
     return EXIT_SUCCESS;
 }
 
@@ -82,7 +86,7 @@ void *team1work(void *param)
 
     sigset_t x;
     sigemptyset(&x);
-    /*team 1 handles SIGINT SIGSEGV and SIGSTOP */
+    /*team 1 handles SIGINT SIGSEGV and SIGTSTP */
     sigaddset(&x, SIGILL);
     sigaddset(&x, SIGFPE);
     sigaddset(&x, SIGHUP);
@@ -96,9 +100,9 @@ void *team1work(void *param)
 
     sigaction(SIGINT, &sa, NULL);
     sigaction(SIGSEGV, &sa, NULL);
-    sigaction(SIGSTOP, &sa, NULL);
+    sigaction(SIGTSTP, &sa, NULL);
 
-    pause();
+    sleep(SLEEP_TIME);
 
     return NULL;
 }
@@ -111,7 +115,7 @@ void *team2work(void *param)
     sigaddset(&x, SIGILL);
     sigaddset(&x, SIGFPE);
     sigaddset(&x, SIGHUP);
-    sigaddset(&x, SIGSTOP);
+    sigaddset(&x, SIGTSTP);
     sigaddset(&x, SIGSEGV);
 
     pthread_sigmask(SIG_BLOCK, &x, NULL);
@@ -123,7 +127,7 @@ void *team2work(void *param)
     sigaction(SIGABRT, &sa, NULL);
     sigaction(SIGCHLD, &sa, NULL);
 
-    pause();
+    sleep(SLEEP_TIME);
 
     return NULL;
 }
@@ -133,7 +137,7 @@ void *team3work(void *param)
     sigset_t x;
     sigemptyset(&x);
 
-    /*team 3 handles SIGSTOP SIGHUP and SIGFPE */
+    /*team 3 handles SIGTSTP SIGHUP and SIGFPE */
     sigaddset(&x, SIGINT);
     sigaddset(&x, SIGABRT);
     sigaddset(&x, SIGILL);
@@ -147,8 +151,8 @@ void *team3work(void *param)
 
     sigaction(SIGFPE, &sa, NULL);
     sigaction(SIGHUP, &sa, NULL);
-    sigaction(SIGSTOP, &sa, NULL);
-    pause();
+    sigaction(SIGTSTP, &sa, NULL);
+    sleep(SLEEP_TIME);
 
     return NULL;
 }
@@ -162,7 +166,7 @@ void *team4work(void *param)
     sigaddset(&x, SIGABRT);
     sigaddset(&x, SIGFPE);
     sigaddset(&x, SIGHUP);
-    sigaddset(&x, SIGSTOP);
+    sigaddset(&x, SIGTSTP);
 
     pthread_sigmask(SIG_BLOCK, &x, NULL);
 
@@ -173,12 +177,18 @@ void *team4work(void *param)
     sigaction(SIGCHLD, &sa, NULL);
     sigaction(SIGSEGV, &sa, NULL);
 
-    pause();
+    sleep(SLEEP_TIME);
 
     return NULL;
 }
 
 /*pthread exit so each thread only catches the signal and reports its number once*/
+
+void sig_handler_main(int sig)
+{
+    printf("Main Thread Catching ");
+    sig_handler(sig);
+}
 
 void sig_handler_t1(int sig)
 {
