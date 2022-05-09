@@ -1,40 +1,75 @@
 #include "p2.h"
 
+pthread_mutex_t lock[4]; // mutex to control access to bounds for each worker
+int t1Bounds[2];         // array holding bounds for each team
+int t2Bounds[2];
+int t3Bounds[2];
+int t4Bounds[2];
+
+int *oddNumberArray; // array holding the list of generated primes
+int *isPrimeArray;   // array holding the list of which numbers are prime
+
 int main(int argc, char *argv[])
 {
 
     // validate input params
-    if (argc != NUM_TEAMS + 1)
+    if (argc != 2)
     {
-        fprintf(stderr, "usage: a.out <integer value> <integer value> <integer value> <integer value>\n");
-        fprintf(stderr, "usage: each integer value is the number of threads you want for team 1,2,3, and 4 in order\n");
+        fprintf(stderr, "usage: a.out <integer value>\n");
+        fprintf(stderr, "usage: each integer value is the number of values in the array\n");
         exit(EXIT_FAILURE);
     }
 
-    // load params into vars
-    int numThreadsPerTeam[] = {atoi(argv[1]),
-                               atoi(argv[2]),
-                               atoi(argv[3]),
-                               atoi(argv[4])};
+    // load params into var
+    int numThreadsPerTeam[] = {1, 10, 100, 1000};
 
-    // validate input params for positve numbers
-    for (int i = 0; i < NUM_TEAMS; i++)
+    int num_elements = atoi(argv[1]);
+
+    // validate input param for positve number
+    if (num_elements <= 0)
     {
-        if (numThreadsPerTeam[i] <= 0)
-        {
-            fprintf(stderr, "usage: provided integer value for the number of threads in each team must be greater than 0\n");
-            exit(EXIT_FAILURE);
-        }
+        fprintf(stderr, "usage: provided integer value for the number of elements in the array must be greater than 0\n");
+        exit(EXIT_FAILURE);
     }
 
+    // create random array and prime array
+    oddNumberArray = malloc(num_elements * sizeof(int));
+    isPrimeArray = malloc(num_elements * sizeof(int));
+
+    // open the input file
+    FILE *f = fopen("oddnumbers.txt", "wb");
+
+    // populate array and file
+    int val;
+    for (int i = 0; i < num_elements; i++)
+    {
+        val = (rand() % ((MAX - MIN) / 2)) * 2 + 1 + MIN;
+        oddNumberArray[i] = val;
+        fprintf(f, "%d\n", val);
+    }
+
+    // close file
+    fclose(f);
+
+    // create subarray boundaries
+
+    t1Bounds[0] = 0;
+    t1Bounds[1] = t1Bounds[0] + num_elements / 4 - 1;
+    t2Bounds[0] = t1Bounds[1] + 1;
+    t2Bounds[1] = t2Bounds[0] + num_elements / 4 - 1;
+    t3Bounds[0] = t2Bounds[1] + 1;
+    t3Bounds[1] = t3Bounds[0] + num_elements / 4 - 1;
+    t4Bounds[0] = t3Bounds[1] + 1;
+    t4Bounds[1] = t4Bounds[0] + num_elements / 4 - 1;
     // declare thread vars
     pthread_t *tid[NUM_TEAMS];
     pthread_attr_t attr;
 
-    // init thread ids
+    // init thread ids and mutexes
     for (int i = 0; i < NUM_TEAMS; i++)
     {
         tid[i] = malloc(numThreadsPerTeam[i] * sizeof(pthread_t));
+        pthread_mutex_init(&lock[i], NULL);
     }
 
     // create default attributes
@@ -52,27 +87,6 @@ int main(int argc, char *argv[])
         }
     }
 
-    // create masking variables
-    sigset_t x;
-    sigemptyset(&x);
-
-    // add all signals to mask that main does not handle
-    sigaddset(&x, SIGILL);
-    sigaddset(&x, SIGFPE);
-    sigaddset(&x, SIGHUP);
-    sigaddset(&x, SIGCHLD);
-    // mask those signals
-    pthread_sigmask(SIG_BLOCK, &x, NULL);
-
-    // create signal handling variables
-    struct sigaction sa;
-    sa.sa_handler = &sig_handler_main;
-
-    /*main thread handles SIGINT SIGABRT and SIGTSTP */
-    sigaction(SIGINT, &sa, NULL);
-    sigaction(SIGABRT, &sa, NULL);
-    sigaction(SIGTSTP, &sa, NULL);
-
     // join all the threads
     for (int i = 0; i < NUM_TEAMS; i++)
     {
@@ -82,127 +96,120 @@ int main(int argc, char *argv[])
         }
     }
 
-    // unblock the masked signals
-    pthread_sigmask(SIG_UNBLOCK, &x, NULL);
+    f = fopen("isPrime.txt", "wb");
+    for (int i = 0; i < NUM_ELEMENTS; i++)
+    {
+        fprintf(f, "%d\n", isPrimeArray[i]);
+    }
 
-    // return handling to default
-    sa.sa_handler = SIG_DFL;
-    sigaction(SIGINT, &sa, NULL);
-    sigaction(SIGABRT, &sa, NULL);
-    sigaction(SIGTSTP, &sa, NULL);
+    fclose(f);
 
-    // notify the user that control has been restored
-    puts("Control Restored to Main Thread");
+    free(isPrimeArray);
+    free(oddNumberArray);
+    free(tid[0]);
+    free(tid[1]);
+    free(tid[2]);
+    free(tid[3]);
 
-    // wait for user to exit (SIGSINT or such command)
-    pause();
     return EXIT_SUCCESS;
 }
 
 void *team1work(void *param)
 {
-    // note all threads follow the same pattern, so only the first is commented
+    int val;
+    while (1)
+    {
+        // lock mutex and acquire target index
+        pthread_mutex_lock(&lock[0]);
+        val = t1Bounds[1];
 
-    // create masking variables
-    sigset_t x;
-    sigemptyset(&x);
-    // add all signals to mask that the thread does not handle
-    sigaddset(&x, SIGILL);
-    sigaddset(&x, SIGFPE);
-    sigaddset(&x, SIGHUP);
-    sigaddset(&x, SIGABRT);
-    sigaddset(&x, SIGCHLD);
-    // mask those signals
-    pthread_sigmask(SIG_BLOCK, &x, NULL);
-
-    // create signal handling variables
-    struct sigaction sa;
-    sa.sa_handler = &sig_handler_t1;
-
-    /*team 1 handles SIGINT SIGSEGV and SIGTSTP */
-    sigaction(SIGINT, &sa, NULL);
-    sigaction(SIGSEGV, &sa, NULL);
-    sigaction(SIGTSTP, &sa, NULL);
-
-    // wait some time for user to send signals
-    sleep(SLEEP_TIME);
+        // if the index is out of range, release mutex and break
+        if (val < t1Bounds[0])
+        {
+            pthread_mutex_unlock(&lock[0]);
+            break;
+        }
+        // otherwise decrement the index for next thread
+        t1Bounds[1]--;
+        // release the mutex
+        pthread_mutex_unlock(&lock[0]);
+        // calculate the prime and submit it
+        isPrimeArray[val] = isPrime(oddNumberArray[val]);
+    }
 
     // return
     return NULL;
 }
 void *team2work(void *param)
 {
-    sigset_t x;
-    sigemptyset(&x);
+    int val;
+    while (1)
+    {
+        // lock mutex and acquire target index
+        pthread_mutex_lock(&lock[1]);
+        val = t2Bounds[1];
 
-    /*team 2 handles SIGINT SIGABRT and SIGCHLD */
-    sigaddset(&x, SIGILL);
-    sigaddset(&x, SIGFPE);
-    sigaddset(&x, SIGHUP);
-    sigaddset(&x, SIGTSTP);
-    sigaddset(&x, SIGSEGV);
-
-    pthread_sigmask(SIG_BLOCK, &x, NULL);
-
-    struct sigaction sa;
-    sa.sa_handler = &sig_handler_t2;
-
-    sigaction(SIGINT, &sa, NULL);
-    sigaction(SIGABRT, &sa, NULL);
-    sigaction(SIGCHLD, &sa, NULL);
-
-    sleep(SLEEP_TIME);
-
+        // if the index is out of range, release mutex and break
+        if (val < t2Bounds[0])
+        {
+            pthread_mutex_unlock(&lock[1]);
+            break;
+        }
+        // otherwise decrement the index for next thread
+        t2Bounds[1]--;
+        // release the mutex
+        pthread_mutex_unlock(&lock[1]);
+        // calculate the prime and submit it
+        isPrimeArray[val] = isPrime(oddNumberArray[val]);
+    }
     return NULL;
 }
 void *team3work(void *param)
 {
+    int val;
+    while (1)
+    {
+        // lock mutex and acquire target index
+        pthread_mutex_lock(&lock[2]);
+        val = t3Bounds[1];
 
-    sigset_t x;
-    sigemptyset(&x);
-
-    /*team 3 handles SIGTSTP SIGHUP and SIGFPE */
-    sigaddset(&x, SIGINT);
-    sigaddset(&x, SIGABRT);
-    sigaddset(&x, SIGILL);
-    sigaddset(&x, SIGCHLD);
-    sigaddset(&x, SIGSEGV);
-
-    pthread_sigmask(SIG_BLOCK, &x, NULL);
-
-    struct sigaction sa;
-    sa.sa_handler = &sig_handler_t3;
-
-    sigaction(SIGFPE, &sa, NULL);
-    sigaction(SIGHUP, &sa, NULL);
-    sigaction(SIGTSTP, &sa, NULL);
-    sleep(SLEEP_TIME);
-
+        // if the index is out of range, release mutex and break
+        if (val < t3Bounds[0])
+        {
+            pthread_mutex_unlock(&lock[2]);
+            break;
+        }
+        // otherwise decrement the index for next thread
+        t3Bounds[1]--;
+        // release the mutex
+        pthread_mutex_unlock(&lock[2]);
+        // calculate the prime and submit it
+        isPrimeArray[val] = isPrime(oddNumberArray[val]);
+    }
     return NULL;
 }
 void *team4work(void *param)
 {
-    sigset_t x;
-    sigemptyset(&x);
+    int val;
+    while (1)
+    {
+        // lock mutex and acquire target index
+        pthread_mutex_lock(&lock[3]);
+        val = t4Bounds[1];
 
-    /*team 4 handles SIGILL SIGCHLD and SIGSEGV*/
-    sigaddset(&x, SIGINT);
-    sigaddset(&x, SIGABRT);
-    sigaddset(&x, SIGFPE);
-    sigaddset(&x, SIGHUP);
-    sigaddset(&x, SIGTSTP);
-
-    pthread_sigmask(SIG_BLOCK, &x, NULL);
-
-    struct sigaction sa;
-    sa.sa_handler = &sig_handler_t4;
-
-    sigaction(SIGILL, &sa, NULL);
-    sigaction(SIGCHLD, &sa, NULL);
-    sigaction(SIGSEGV, &sa, NULL);
-
-    sleep(SLEEP_TIME);
-
+        // if the index is out of range, release mutex and break
+        if (val < t4Bounds[0])
+        {
+            pthread_mutex_unlock(&lock[3]);
+            break;
+        }
+        // otherwise decrement the index for next thread
+        t4Bounds[1]--;
+        // release the mutex
+        pthread_mutex_unlock(&lock[3]);
+        // calculate the prime and submit it
+        isPrimeArray[val] = isPrime(oddNumberArray[val]);
+    }
     return NULL;
 }
 
@@ -235,4 +242,16 @@ void sig_handler_t4(int sig)
 void sig_handler(int sig)
 {
     printf("Signal %s Caught by Thread Number: %ld\n", strsignal(sig), pthread_self());
+}
+
+int isPrime(int n)
+{
+    for (int i = 2; i <= sqrt(n); i++)
+    {
+        if (n % i == 0)
+        {
+            return 0;
+        }
+    }
+    return 1;
 }

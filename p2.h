@@ -4,9 +4,13 @@
 #include <pthread.h>
 #include <signal.h>
 #include <string.h>
+#include <math.h>
 
 #define NUM_TEAMS 4   // number of teams
 #define SLEEP_TIME 30 // time to sleep before joining threads
+#define NUM_ELEMENTS 100000
+#define MIN 1000
+#define MAX 50000
 
 /**
  * @brief
@@ -102,3 +106,12 @@ void sig_handler_t3(int sig);
  * @return void
  */
 void sig_handler_t4(int sig);
+
+/**
+ * @brief
+ * Returns whether a number is prime or not
+ * @param val
+ * the number to determine
+ * @return 1 if prime, 0 if not
+ */
+int isPrime(int n);
