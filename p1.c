@@ -202,6 +202,6 @@ void sig_handler_t4(int sig)
 }
 void sig_handler(int sig)
 {
-    printf("Signal Number %d Caught by Thread Number: %ld\n", sig, pthread_self());
+    printf("Signal %s Caught by Thread Number: %ld\n", strsignal(sig), pthread_self());
     // pthread_exit(0);
 }

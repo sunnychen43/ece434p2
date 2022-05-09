@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <signal.h>
+#include <string.h>
 
 #define test_string "Hello World"
 #define NUM_TEAMS 4
