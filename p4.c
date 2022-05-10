@@ -1,4 +1,4 @@
-#include "p1.h"
+#include "p4.h"
 
 int main(int argc, char *argv[])
 {
@@ -74,6 +74,9 @@ int main(int argc, char *argv[])
     sigaction(SIGABRT, &sa, NULL);
     sigaction(SIGTSTP, &sa, NULL);
 
+    // send signals to threads
+    sendAllSignals(tid[0][0]);
+
     // join all the threads
     for (int i = 0; i < NUM_TEAMS; i++)
     {
@@ -100,6 +103,17 @@ int main(int argc, char *argv[])
     return EXIT_SUCCESS;
 }
 
+void sendAllSignals(pthread_t tid)
+{
+    pthread_kill(tid, SIGILL);
+    pthread_kill(tid, SIGFPE);
+    pthread_kill(tid, SIGHUP);
+    pthread_kill(tid, SIGABRT);
+    pthread_kill(tid, SIGCHLD);
+    pthread_kill(tid, SIGINT);
+    pthread_kill(tid, SIGSEGV);
+    pthread_kill(tid, SIGTSTP);
+}
 void *team1work(void *param)
 {
     // note all threads follow the same pattern, so only the first is commented

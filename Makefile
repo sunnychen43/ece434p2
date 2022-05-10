@@ -10,9 +10,10 @@ run:
 signal:
 	killall -s $(s) p1.out
 
-all: p1.out p2.out
+all: p1.out p2.out p4.out
 p1: p1.out 
 p2: p2.out
+p4: p4.out
 
 
 p1.o: p1.c p1.h
@@ -27,6 +28,11 @@ p2.o: p2.c p2.h
 p2.out: p2.o
 	$(COMPILER) $(FLAGS) -o p2.out p2.o -pthread -lm
 
+p4.o: p4.c p4.h
+	$(COMPILER) $(FLAGS) -c p4.c
+
+p4.out: p4.o
+	$(COMPILER) $(FLAGS) -o p4.out p4.o -pthread
 
 clean:
 	rm -f *.o *.out *.txt
