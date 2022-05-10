@@ -9,6 +9,8 @@ int t4Bounds[2];
 int *oddNumberArray; // array holding the list of generated primes
 int *isPrimeArray;   // array holding the list of which numbers are prime
 
+clock_t start, t1End, t2End, t3End, t4End, end, res;
+
 int main(int argc, char *argv[])
 {
 
@@ -87,6 +89,9 @@ int main(int argc, char *argv[])
         }
     }
 
+    // start timer
+    start = clock();
+
     // join all the threads
     for (int i = 0; i < NUM_TEAMS; i++)
     {
@@ -95,6 +100,19 @@ int main(int argc, char *argv[])
             pthread_join(tid[i][j], NULL);
         }
     }
+
+    end = clock();
+    double t1Time = (t1End) / 1000;
+    double t2Time = (t2End) / 1000;
+    double t3Time = (t3End) / 1000;
+    double t4Time = (t4End) / 1000;
+    double mTime = (end - start) / 1000;
+
+    printf("Team 1 took %f us to complete\n", t1Time);
+    printf("Team 2 took %f us to complete\n", t2Time);
+    printf("Team 3 took %f us to complete\n", t3Time);
+    printf("Team 4 took %f us to complete\n", t4Time);
+    printf("Main thread took %f us to complete\n", mTime);
 
     f = fopen("isPrime.txt", "wb");
     for (int i = 0; i < num_elements; i++)
@@ -116,7 +134,6 @@ int main(int argc, char *argv[])
 
 void *team1work(void *param)
 {
-
     int val;
     while (1)
     {
@@ -127,6 +144,7 @@ void *team1work(void *param)
         // if the index is out of range, release mutex and break
         if (val < t1Bounds[0])
         {
+            t1End = clock();
             pthread_mutex_unlock(&lock[0]);
             break;
         }
@@ -153,6 +171,7 @@ void *team2work(void *param)
         // if the index is out of range, release mutex and break
         if (val < t2Bounds[0])
         {
+            t2End = clock();
             pthread_mutex_unlock(&lock[1]);
             break;
         }
@@ -177,6 +196,7 @@ void *team3work(void *param)
         // if the index is out of range, release mutex and break
         if (val < t3Bounds[0])
         {
+            t3End = clock();
             pthread_mutex_unlock(&lock[2]);
             break;
         }
@@ -201,6 +221,7 @@ void *team4work(void *param)
         // if the index is out of range, release mutex and break
         if (val < t4Bounds[0])
         {
+            t4End = clock();
             pthread_mutex_unlock(&lock[3]);
             break;
         }
