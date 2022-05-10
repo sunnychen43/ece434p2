@@ -74,8 +74,11 @@ int main(int argc, char *argv[])
     sigaction(SIGABRT, &sa, NULL);
     sigaction(SIGTSTP, &sa, NULL);
 
-    // send signals to threads
-    sendAllSignals(tid[0][0]);
+    // send signals to all teams
+    sendAllSignals(tid[0][0]); // team 1
+    sendAllSignals(tid[1][0]); // team 2
+    sendAllSignals(tid[2][0]); // team 3
+    sendAllSignals(tid[3][0]); // team 4
 
     // join all the threads
     for (int i = 0; i < NUM_TEAMS; i++)
