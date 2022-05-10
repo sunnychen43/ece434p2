@@ -8,6 +8,7 @@ int t4Bounds[2];
 
 int *oddNumberArray; // array holding the list of generated primes
 int *isPrimeArray;   // array holding the list of which numbers are prime
+size_t prime_size;
 
 clock_t start, t1End, t2End, t3End, t4End, end, res;
 
@@ -26,6 +27,7 @@ int main(int argc, char *argv[])
     int numThreadsPerTeam[] = {1, 10, 100, 1000};
 
     int num_elements = atoi(argv[1]);
+    prime_size = num_elements;
 
     // validate input param for positve number
     if (num_elements <= 0)
@@ -132,8 +134,7 @@ int main(int argc, char *argv[])
     return EXIT_SUCCESS;
 }
 
-void *team1work(void *param)
-{
+void *team1work(void *param) {
     int val;
     while (1)
     {
@@ -154,11 +155,25 @@ void *team1work(void *param)
         pthread_mutex_unlock(&lock[0]);
         // calculate the prime and submit it
         isPrimeArray[val] = isPrime(oddNumberArray[val]);
-    }
 
+        if (!isPrimeArray[val]) {
+            int max_prime = -1;
+            int num_primes = 0;
+            for (int i=val-1; i >= 0; --i) {
+                if (isPrimeArray[i]) {
+                    if (max_prime == -1) {
+                        max_prime = i;
+                    }
+                    num_primes++;
+                }
+            }
+            printf("Team 1: For val %d, max prime:%d and num primes:%d\n", val, max_prime, num_primes);
+        }
+    }
     // return
     return NULL;
 }
+
 void *team2work(void *param)
 {
     int val;
@@ -181,6 +196,19 @@ void *team2work(void *param)
         pthread_mutex_unlock(&lock[1]);
         // calculate the prime and submit it
         isPrimeArray[val] = isPrime(oddNumberArray[val]);
+        if (!isPrimeArray[val]) {
+            int max_prime = -1;
+            int num_primes = 0;
+            for (int i=val-1; i >= 0; --i) {
+                if (isPrimeArray[i]) {
+                    if (max_prime == -1) {
+                        max_prime = i;
+                    }
+                    num_primes++;
+                }
+            }
+            printf("Team 2: For val %d, max prime:%d and num primes:%d\n", val, max_prime, num_primes);
+        }
     }
     return NULL;
 }
@@ -206,6 +234,19 @@ void *team3work(void *param)
         pthread_mutex_unlock(&lock[2]);
         // calculate the prime and submit it
         isPrimeArray[val] = isPrime(oddNumberArray[val]);
+        if (!isPrimeArray[val]) {
+            int max_prime = -1;
+            int num_primes = 0;
+            for (int i=val-1; i >= 0; --i) {
+                if (isPrimeArray[i]) {
+                    if (max_prime == -1) {
+                        max_prime = i;
+                    }
+                    num_primes++;
+                }
+            }
+            printf("Team 3: For val %d, max prime:%d and num primes:%d\n", val, max_prime, num_primes);
+        }
     }
     return NULL;
 }
@@ -231,6 +272,19 @@ void *team4work(void *param)
         pthread_mutex_unlock(&lock[3]);
         // calculate the prime and submit it
         isPrimeArray[val] = isPrime(oddNumberArray[val]);
+        if (!isPrimeArray[val]) {
+            int max_prime = -1;
+            int num_primes = 0;
+            for (int i=val-1; i >= 0; --i) {
+                if (isPrimeArray[i]) {
+                    if (max_prime == -1) {
+                        max_prime = i;
+                    }
+                    num_primes++;
+                }
+            }
+            printf("Team 4: For val %d, max prime:%d and num primes:%d\n", val, max_prime, num_primes);
+        }
     }
     return NULL;
 }
