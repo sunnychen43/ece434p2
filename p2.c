@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
     }
 
     f = fopen("isPrime.txt", "wb");
-    for (int i = 0; i < NUM_ELEMENTS; i++)
+    for (int i = 0; i < num_elements; i++)
     {
         fprintf(f, "%d\n", isPrimeArray[i]);
     }
@@ -116,6 +116,7 @@ int main(int argc, char *argv[])
 
 void *team1work(void *param)
 {
+
     int val;
     while (1)
     {

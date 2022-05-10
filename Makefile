@@ -29,4 +29,4 @@ p2.out: p2.o
 
 
 clean:
-	rm -f *.o *.out
+	rm -f *.o *.out *.txt

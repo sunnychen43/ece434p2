@@ -5,6 +5,7 @@
 #include <signal.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
 
 #define NUM_TEAMS 4   // number of teams
 #define SLEEP_TIME 30 // time to sleep before joining threads
