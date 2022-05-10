@@ -110,6 +110,24 @@ void sig_handler_t4(int sig);
 
 /**
  * @brief
+ * Pauses the thread
+ * @param sig
+ * the signal caught
+ * @return void
+ */
+void sig_handler_pause(int sig);
+
+/**
+ * @brief
+ * Tells threads 3 and 4 to exit, then exits
+ * @param sig
+ * the signal caught
+ * @return void
+ */
+void sig_handler_exit(int sig);
+
+/**
+ * @brief
  * Returns whether a number is prime or not
  * @param val
  * the number to determine

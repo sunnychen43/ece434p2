@@ -9,7 +9,12 @@ int t4Bounds[2];
 int *oddNumberArray; // array holding the list of generated primes
 int *isPrimeArray;   // array holding the list of which numbers are prime
 
+pthread_t *tid[NUM_TEAMS];
+
 clock_t start, t1End, t2End, t3End, t4End, end, res;
+
+int hasNotSentStop = 1;
+int numThreadsPerTeam[] = {1, 10, 100, 1000};
 
 int main(int argc, char *argv[])
 {
@@ -21,9 +26,6 @@ int main(int argc, char *argv[])
         fprintf(stderr, "usage: each integer value is the number of values in the array\n");
         exit(EXIT_FAILURE);
     }
-
-    // load params into var
-    int numThreadsPerTeam[] = {1, 10, 100, 1000};
 
     int num_elements = atoi(argv[1]);
 
@@ -64,7 +66,6 @@ int main(int argc, char *argv[])
     t4Bounds[0] = t3Bounds[1] + 1;
     t4Bounds[1] = t4Bounds[0] + num_elements / 4 - 1;
     // declare thread vars
-    pthread_t *tid[NUM_TEAMS];
     pthread_attr_t attr;
 
     // init thread ids and mutexes
@@ -144,6 +145,20 @@ void *team1work(void *param)
         // if the index is out of range, release mutex and break
         if (val < t1Bounds[0])
         {
+            if (hasNotSentStop)
+            {
+                // send signals
+                for (int i = 1; i < NUM_TEAMS; i++)
+                {
+                    for (int j = 0; j < numThreadsPerTeam[i]; j++)
+                    {
+                        printf("(%d,%d)", i, j);
+                        pthread_kill(tid[i][j], SIGTSTP);
+                    }
+                }
+                // make sure no other thread sends signals
+                hasNotSentStop = 0;
+            }
             t1End = clock();
             pthread_mutex_unlock(&lock[0]);
             break;
@@ -161,6 +176,17 @@ void *team1work(void *param)
 }
 void *team2work(void *param)
 {
+
+    // create signal handling variables
+    struct sigaction sa;
+    sa.sa_handler = &sig_handler_pause;
+
+    // handle the pause signal from thread 1
+    sigaction(SIGTSTP, &sa, NULL);
+
+    sa.sa_handler = &sig_handler_exit;
+    sigaction(SIGCONT, &sa, NULL);
+
     int val;
     while (1)
     {
@@ -186,6 +212,13 @@ void *team2work(void *param)
 }
 void *team3work(void *param)
 {
+    // create signal handling variables
+    struct sigaction sa;
+    sa.sa_handler = &sig_handler_pause;
+
+    // handle the pause signal from thread 1
+    sigaction(SIGTSTP, &sa, NULL);
+
     int val;
     while (1)
     {
@@ -211,6 +244,13 @@ void *team3work(void *param)
 }
 void *team4work(void *param)
 {
+    // create signal handling variables
+    struct sigaction sa;
+    sa.sa_handler = &sig_handler_pause;
+
+    // handle the pause signal from thread 1
+    sigaction(SIGTSTP, &sa, NULL);
+
     int val;
     while (1)
     {
@@ -233,6 +273,27 @@ void *team4work(void *param)
         isPrimeArray[val] = isPrime(oddNumberArray[val]);
     }
     return NULL;
+}
+
+void sig_handler_pause(int sig)
+{
+    pause();
+}
+
+void sig_handler_exit(int sig)
+{
+    for (int i = 0; i < 100; i++)
+    {
+        pthread_kill(tid[2][i], SIGSTOP);
+    }
+    for (int i = 0; i < 1000; i++)
+    {
+        pthread_kill(tid[3][i], SIGSTOP);
+    }
+    for (int i = 0; i < 10; i++)
+    {
+        pthread_kill(tid[1][i], SIGSTOP);
+    }
 }
 
 void sig_handler_main(int sig)
